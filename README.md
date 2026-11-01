@@ -231,25 +231,25 @@ I used **Claude Code** as a collaborative partner:
 
 ## What I found from data
 
-Each row is something I found while exploring the data (notebooks 01–03), what I did because of it, and the check that guards it. "Test" means `tests/test_pipeline.py` breaks the data on purpose to prove the check fails.
+Each row is something I found while exploring the data (notebooks 01–03) and what I did because of it.
 
-| What I found | What I did | Check (test) |
-|---|---|---|
-| The data dictionary says dates are dd/mm/yyyy, but every file uses yyyy-mm-dd | Read dates as yyyy-mm-dd | `reject_rate_per_year` (hard): if a file switches format, most dates won't read and the build stops instead of loading half a year (test: dates switched to dd/mm/yyyy → build stops) |
-| `_id` changes on every re-publish (35 times while I built this) | Compare files by row content, not by `_id`; keep `_id` only to trace a row back | — |
-| Files are rebuilt every morning (about 07:00–08:20 ET, going by the source's last-modified times), even when nothing changed; twice I caught a file mid-rewrite | Refuse a file whose row count doesn't match, keep the current version, retry next run | download refused in ingest |
-| Old years still change (2013 gained 181 rows, 2018 gained 378 in late October 2026) | Download all years every run; rebuild silver and gold every run | `year_lost_rows` (warn): a year loses more than 5% of its rows |
-| Most records aren't market sales: $1 is the most common price (105,558 of 506,977 records), a quarter of priced records are $10 or less, a few are over $100M | Only sales the County codes as valid; median, not average | — |
-| The share of records coded valid changes by year (7.7% in 2012, 32.2% in 2023) because the coding changed, not the market | Don't compare sale counts across years; show `pct_valid` on every row | — |
-| Sale codes change after publishing (400 in the 2026 file within 3 days) | Filter valid sales in gold, not silver; mark the latest year `is_provisional` | `sale_code_not_in_lookup` (warn): a new code appears (test: unknown code → warning, never counted as valid) |
-| Deed `0`/`0` is shared by 957 unrelated parcels | Flag placeholder deeds; never group or join on them | `no_placeholder_deed_groups` (hard) (test: placeholder deeds → flagged, not used in gold) |
-| A deed with several parcels shows the deed's total price on every parcel (24,408 of 25,170 such deeds) | Only use deeds with one parcel (leaves out 165 valid-coded records, 0.14%) | `gold_valid_rows_reconcile` (hard): every valid record is used once or counted as excluded, 114,611 = 114,313 + 298 (test: multi-parcel deed → excluded and counted) |
-| A deed number with several sale dates isn't reliably one sale: days apart in one file, years apart across files | Only use deeds with one sale date | counted in `gold_valid_rows_reconcile` |
-| 60 parcels have valid records on one sale date under two different deeds: one sale entered twice, or two sales back to back | Use neither price; count both in `valid_records_excluded` | `gold_one_sale_per_parcel_date` (hard) (test: same parcel and date on two deeds → neither used) |
-| 59 valid-coded sales are under $1,000 | Keep them; the sale code decides, not the price | `valid_sale_price_floor` (warn) (test: a $500 valid sale → warning, still used) |
-| Small groups: the median year × municipality row has 21 sales; by quarter it would be 7 | Year × municipality; flag rows under 10 sales; no median under 5 | `gold_medians_only_with_enough_sales` (hard) (test: 2 sales → no median) |
-| A parcel's address and municipality never change across 15 years (313,906 parcels) | Treat the municipality as probably today's, and say so as a caveat | — |
-| 3,165 records have ZIP codes outside 150xx–152xx for parcels inside Allegheny municipalities | Group by municipality, not ZIP; no county-range check on ZIP | `code_format` (warn): ZIP not 5 digits |
+| What I found | What I did |
+|---|---|
+| The data dictionary says dates are dd/mm/yyyy, but every file uses yyyy-mm-dd | Read dates as yyyy-mm-dd |
+| `_id` changes on every re-publish (35 times while I built this) | Compare files by row content, not by `_id`; keep `_id` only to trace a row back |
+| Files are rebuilt every morning (about 07:00–08:20 ET, going by the source's last-modified times), even when nothing changed; twice I caught a file mid-rewrite | Refuse a file whose row count doesn't match, keep the current version, retry next run |
+| Old years still change (2013 gained 181 rows, 2018 gained 378 in late October 2026) | Download all years every run; rebuild silver and gold every run |
+| Most records aren't market sales: $1 is the most common price (105,558 of 506,977 records), a quarter of priced records are $10 or less, a few are over $100M | Only sales the County codes as valid; median, not average |
+| The share of records coded valid changes by year (7.7% in 2012, 32.2% in 2023) because the coding changed, not the market | Don't compare sale counts across years; show `pct_valid` on every row |
+| Sale codes change after publishing (400 in the 2026 file within 3 days) | Filter valid sales in gold, not silver; mark the latest year `is_provisional` |
+| Deed `0`/`0` is shared by 957 unrelated parcels | Flag placeholder deeds; never group or join on them |
+| A deed with several parcels shows the deed's total price on every parcel (24,408 of 25,170 such deeds) | Only use deeds with one parcel (leaves out 165 valid-coded records, 0.14%) |
+| A deed number with several sale dates isn't reliably one sale: days apart in one file, years apart across files | Only use deeds with one sale date |
+| 60 parcels have valid records on one sale date under two different deeds: one sale entered twice, or two sales back to back | Use neither price; count both in `valid_records_excluded` |
+| 59 valid-coded sales are under $1,000 | Keep them; the sale code decides, not the price |
+| Small groups: the median year × municipality row has 21 sales; by quarter it would be 7 | Year × municipality; flag rows under 10 sales; no median under 5 |
+| A parcel's address and municipality never change across 15 years (313,906 parcels) | Treat the municipality as probably today's, and say so as a caveat |
+| 3,165 records have ZIP codes outside 150xx–152xx for parcels inside Allegheny municipalities | Group by municipality, not ZIP; no county-range check on ZIP |
 
 ## Appendix: the `meta.*` tables
 
