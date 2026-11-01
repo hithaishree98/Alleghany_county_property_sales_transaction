@@ -1,0 +1,5 @@
+duckdb==2.0.0
+pyarrow==21.0.0
+requests==2.33.1
+pytest==9.0.2
+ipykernel==6.29.5

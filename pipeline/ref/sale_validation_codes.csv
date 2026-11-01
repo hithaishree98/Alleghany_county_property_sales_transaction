@@ -1,0 +1,52 @@
+sale_code,validity_group,description,note
+AA,undetermined,SALE NOT ANALYZED,
+0,valid,VALID SALE,
+U,valid,OTHER VALID,
+UR,valid,OTHER VALID,
+1,invalid,SHERIFF SALE,
+32,invalid,COURT ORDERED SALE,
+2,invalid,CITY TREASURER SALE,
+GV,invalid,GOVERNMENT SALE,
+3,invalid,LOVE AND AFFECTION SALE,
+6,invalid,CHANGED AFTER SALE,
+9,invalid,OTHER INVALID SALES INDICATED,
+13,invalid,EXEMPT BUYER OR SELLER,
+14,invalid,TIME ON MARKET (INSUFF/EXCESS),
+16,invalid,BUILDING NOT YET ASSESSED,
+19,invalid,INCLUDES PERSONAL PROPERTY,
+27,invalid,NO ASSESSED VALUATION,
+33,invalid,SALE OF PREVIOUS FORECLOSURE - INVALID,
+34,invalid,SHORT SALE - INVALID,
+35,invalid,CORPORATION TRANSFER,
+36,invalid,QUIT CLAIM / SPECIAL WARRANTY,
+37,invalid,ESTATE SALE,
+99,invalid,CORRECTIVE DEED / DUPLICATE SALE,
+BK,invalid,BANK/FINANCIAL INSTITUTION,
+DT,invalid,DATE OF TRANSFER (RECORD YR <> SALE YR),
+H,invalid,MULTI-PARCEL SALE,
+N,invalid,NOT APPLICABLE,
+PA,invalid,PREFERENTIAL ASMT,
+UX,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+VB,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+VH,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+0X,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+50,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+PX,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+X,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+XX,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+YY,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+Z,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+21,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+24,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+25,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+26,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+28,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+29,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+4,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+5,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+7,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+8,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+S,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+V,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+ND,discontinued,OTHER,discontinued code: counted as invalid (data dictionary)
+PV,unclassified,CLEAN AND GREEN  VALID PREFERENTIAL,not in the data dictionary; kept out of valid until Q-17 is answered
