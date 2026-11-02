@@ -80,7 +80,7 @@ def main(argv=None):
     parser.add_argument("--dataset", default=DATASET_ID)
     parser.add_argument("--db", default=str(DB_PATH))
     parser.add_argument("--years", type=int, nargs="*", help="only ingest these years (default: all)")
-    parser.add_argument("--keep-versions", type=int, default=1,
+    parser.add_argument("--keep-versions", type=int, default=2,
                         help="full bronze versions per year to keep (default: 2, minimum 1)")
     parser.add_argument("--skip-ingest", action="store_true",
                         help="don't download; rebuild silver and gold from the bronze already loaded")
