@@ -9,14 +9,15 @@ It runs on a laptop with Python and DuckDB. No cloud accounts are needed.
 1. [How to run it](#how-to-run-it)
 2. [How the layers are designed](#how-the-layers-are-designed)
 3. [The output table and the question it answers](#the-output-table-and-the-question-it-answers)
-4. [Re-runs and source updates](#re-runs-and-source-updates)
-5. [Data quality checks](#data-quality-checks)
-6. [The three most important design decisions](#the-three-most-important-design-decisions)
-7. [Daily refreshes and 100x scale](#daily-refreshes-and-100x-scale)
-8. [AI disclosure](#ai-disclosure)
-9. [What I found from data](#what-i-found-from-data)
-10. [Appendix: the `meta.*` tables](#appendix-the-meta-tables)
-11. [What each part does](#what-each-part-does)
+4. [Dashboard](#dashboard)
+5. [Re-runs and source updates](#re-runs-and-source-updates)
+6. [Data quality checks](#data-quality-checks)
+7. [The three most important design decisions](#the-three-most-important-design-decisions)
+8. [Daily refreshes and 100x scale](#daily-refreshes-and-100x-scale)
+9. [AI disclosure](#ai-disclosure)
+10. [What I found from data](#what-i-found-from-data)
+11. [Appendix: the `meta.*` tables](#appendix-the-meta-tables)
+12. [What each part does](#what-each-part-does)
 
 ## How to run it
 
@@ -27,10 +28,11 @@ pip install -r requirements.txt
 
 python -m pipeline.run                  # download all years, then build silver and gold
 python -m pipeline.run --skip-ingest    # rebuild silver and gold from the files already downloaded
+python -m pipeline.dashboard            # rebuild only the dashboard from the current gold table
 python -m pytest -q                     # run the tests (no download needed)
 ```
 
-Everything is written to `data/`: the raw files go to `data/landing/` and the tables to `data/warehouse.duckdb`.
+Everything is written to `data/`: the raw files go to `data/landing/` and the tables to `data/warehouse.duckdb`. Every run ends by rewriting the dashboard, `dashboard/home_sale_prices.html` (open it in a browser), and the gold table as `dashboard/valid_sale_prices_by_municipality_year.csv`.
 
 ## How the layers are designed
 
@@ -44,7 +46,7 @@ The data moves through four layers: landing → bronze → silver → gold. Each
 
 ### What the table shows
 
-The queries and full results are in `notebooks/04_output_table.ipynb`.
+The queries are in `pipeline/insights.py`, and their full results and a chart for each are in `notebooks/04_output_table.ipynb`. The [dashboard](#dashboard) uses the same queries. The numbers below are **as of data through October 22, 2026**; the dashboard is rebuilt with every refresh and shows the current values.
 
 **How I compared**
 - One row of the table = one municipality in one year, with the median price of its valid sales. The County's municipality code splits Pittsburgh and McKeesport into wards, so here "municipality" means a municipality or one of those wards.
@@ -53,7 +55,7 @@ The queries and full results are in `notebooks/04_output_table.ipynb`.
 - Yearly change is measured inside each municipality (this year's median ÷ last year's), then I take the median of those changes. The set of municipalities with 30+ sales changes every year; if cheap places drop out, prices would look higher even though nothing changed. Measuring per municipality avoids that.
 
 **What it showed**
-- **Prices were flat until 2019, jumped 24% in 2020 and 12% in 2021, and have grown 4–8% a year since (2022–2025).** In 2020, 98% of municipalities went up, so it wasn't a few outliers.
+- **Prices rose slowly until 2019 (1.12x in total from 2013, about 2% a year, though some years were +6–8%), jumped 24% in 2020 and 12% in 2021, and have grown 4–8% a year since (2022–2025).** In 2020, 98% of municipalities went up, so it wasn't a few outliers.
 - **Every place went up after 2019.** I followed the same 53 municipalities that have 30+ sales in 2013, 2019 and 2025. The typical one grew 1.12x from 2013 to 2019 and 1.72x from 2019 to 2025, and all 53 were higher in 2025 than in 2019.
 - **Cheaper places went up the most.** I sorted municipalities into four groups by their 2019 price. By 2025 the cheapest group had grown 2.15x and the most expensive 1.46x. Most of this happened in 2020–2021.
 - **Expensive places stay expensive, but the gap is shrinking.** The ranking barely changes from year to year. But the 90th-percentile municipality cost 3.2–4.0x the 10th up to 2019, 3.0–3.1x in 2020–2022, and 2.6–2.85x from 2023.
@@ -62,6 +64,7 @@ The queries and full results are in `notebooks/04_output_table.ipynb`.
 
 **What to keep in mind**
 - **2012 isn't reliable as a starting point:** only 7.7% of its records are coded valid, and only 26 municipalities have 30+ sales.
+- **2019 is the next weakest year** (12.8% coded valid, 53 municipalities with 30+ sales), and it's the base year for "every place went up after 2019" and "cheaper places went up the most". Those hold for the 53 places that can be measured, but they're based on fewer sales than the years around them.
 - **2026 isn't finished,** and its sale codes are still being reviewed, so comparisons stop at 2025.
 - **There's no property type in the data.** If more condos sold one year, the median could drop without prices actually falling.
 
@@ -84,6 +87,22 @@ One row per year and municipality: 2,618 rows, 175 municipality codes (Pittsburg
 **Which records count as a sale**
 Valid sale code (`0`, `U`, `UR`) → has a price → its deed covers one parcel on one sale date → the parcel isn't also on another deed on the same date → used.
 114,611 valid-coded records → 114,313 used + 298 excluded. A hard check makes sure these always add up.
+
+## Dashboard
+
+`dashboard/home_sale_prices.html` is a single page for people who use the County's data rather than the code. It's laid out like the dashboards on [Allegheny Analytics](https://analytics.alleghenycounty.us/) (for example their Juvenile Justice Offenses dashboard: Home / Data and Definitions / Summary / Neighborhood), and its Municipality tab works like their Human Services Community Profile (pick a place and compare it with up to five others).
+
+| Tab | What it shows |
+|---|---|
+| Home | What the page is, the headline numbers for the last complete year, the findings above written out with the current numbers, and a short caveat |
+| Data and Definitions | What data is available, what each term means, the limits (2012, 2019, the provisional year, no property type), and how much of each year is coded valid |
+| County Summary | Typical yearly change, share of places going up, the spread between expensive and cheap places, growth by price quarter, before/after the jump, and the highest and lowest places for any year |
+| Municipality | A map of the typical price by municipality and ward for any year, and a profile of one place compared with up to five others: price with its middle half, sales behind each year, and a year-by-year table with reliability badges |
+
+- **Refreshes with the data.** `pipeline/run.py` rebuilds the page after every successful gold build, so whatever runs the pipeline daily also refreshes the page; it shows "Data through" (the latest sale date) and when it was rebuilt. If the page can't be built, the run still succeeds and the previous page stays.
+- **Same numbers as the notebook and this README.** Every chart comes from the queries in `pipeline/insights.py`. Places with fewer than 30 sales are shown but not compared, and the County level (the typical municipality) is shown only for years with at least 50 comparable places, so 2012's $160,625 isn't drawn as a drop.
+- **The map** uses the County's voting district outlines from WPRDC, merged into municipalities and the wards of Pittsburgh, McKeesport, Clairton and Duquesne (all 175 codes match). They're downloaded once into `data/boundaries/`; if that fails, the page is built without the map.
+- **No server needed.** It's one HTML file with the data inside; charts use Plotly from a CDN. The CSV next to it is the gold table, ready for Tableau, ArcGIS or Excel.
 
 ## Re-runs and source updates
 
@@ -273,6 +292,8 @@ Each row is something I found while exploring the data (notebooks 01–03) and w
 | `pipeline/silver.py` | Gives every column its proper type, trims spaces, flags known problems, sets aside rows that can't be read, and builds the deed table. No rows are removed |
 | `pipeline/gold.py` | Builds the output table: median, p25 and p75 price of valid single-parcel sales per year and municipality, and how many sales each number is based on |
 | `pipeline/checks.py` | The data quality checks. **hard** stops the build, **warn** is reported, **info** is counted. Results go to `meta.check_results` |
-| `pipeline/run.py` | Runs ingest → silver → gold |
-| `notebooks/` | 01–03: exploring the data, which shaped the design and the checks. 04: what the output table shows |
+| `pipeline/insights.py` | The questions asked of the gold table, as SQL, shared by notebook 04 and the dashboard |
+| `pipeline/dashboard.py`, `pipeline/dashboard_template.html` | Writes the dashboard page and the CSV from gold, and builds the map outlines |
+| `pipeline/run.py` | Runs ingest → silver → gold → dashboard |
+| `notebooks/` | 01–03: exploring the data, which shaped the design and the checks. 04: what the output table shows, with a chart per question |
 | `tests/` | Break a small fake dataset on purpose and check that the pipeline stops, rejects or warns as expected |

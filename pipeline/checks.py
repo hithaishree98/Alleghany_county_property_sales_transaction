@@ -32,7 +32,7 @@ MAX_REJECT_RATE = 0.001
 MAX_YEAR_DROP = 0.05
 # The first year file; a sale date before it, or after the file's last_modified date, is not a real date.
 FIRST_SALE_DATE = "2012-01-01"
-# A valid-coded sale below this price is reported (03 §4.7 A); the sale code still decides.
+# A valid-coded sale below this price is reported; the sale code still decides.
 MIN_VALID_PRICE = 1000
 
 SETUP_SQL = """

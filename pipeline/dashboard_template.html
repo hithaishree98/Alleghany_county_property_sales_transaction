@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Allegheny Home Sale Prices</title>
+<meta name="description" content="Typical valid home sale prices by municipality and year in Allegheny County, from the County's property sale records.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.35.3/plotly.min.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --surface-2: #f0efec;
+  --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --ring: rgba(11,11,11,0.10);
+  --accent: #2a78d6; --accent-ink: #1c5cab; --highlight: #eb6834;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300;
+  --q1: #86b6ef; --q2: #3987e5; --q3: #256abf; --q4: #104281;
+  --m0: #b7d3f6; --m1: #86b6ef; --m2: #5598e7; --m3: #2a78d6; --m4: #1c5cab; --m5: #104281;
+  --none: #e1e0d9; --band: rgba(42,120,214,0.14);
+  --warn-bg: #fff4dc; --warn-ink: #7a5300;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --surface-2: #242423;
+    --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
+    --accent: #3987e5; --accent-ink: #86b6ef; --highlight: #d95926;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300;
+    --q1: #b7d3f6; --q2: #6da7ec; --q3: #3987e5; --q4: #256abf;
+    --none: #383835; --band: rgba(57,135,229,0.22);
+    --warn-bg: #3a2c0c; --warn-ink: #f5c86a;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --surface-2: #242423;
+  --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
+  --accent: #3987e5; --accent-ink: #86b6ef; --highlight: #d95926;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300;
+  --q1: #b7d3f6; --q2: #6da7ec; --q3: #3987e5; --q4: #256abf;
+  --none: #383835; --band: rgba(57,135,229,0.22);
+  --warn-bg: #3a2c0c; --warn-ink: #f5c86a;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+a { color: var(--accent-ink); }
+header.site { background: var(--surface); border-bottom: 1px solid var(--ring); }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+header.site .wrap { padding-top: 20px; }
+.eyebrow { color: var(--muted); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; margin: 0; }
+h1 { font-size: 26px; line-height: 1.2; margin: 4px 0 6px; }
+.meta { color: var(--ink-2); font-size: 13px; margin: 0 0 14px; }
+.meta span + span::before { content: " · "; color: var(--muted); }
+nav.tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+nav.tabs button { font: inherit; font-size: 14px; background: none; border: 0; border-bottom: 3px solid transparent;
+  padding: 10px 12px; color: var(--ink-2); cursor: pointer; white-space: nowrap; }
+nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+nav.tabs button:focus-visible, .chip button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+main { padding: 20px 0 40px; }
+section.tab[hidden] { display: none; }
+h2 { font-size: 19px; margin: 28px 0 10px; }
+h2:first-child { margin-top: 4px; }
+h3 { font-size: 15px; margin: 0 0 2px; }
+p { margin: 0 0 10px; }
+.lede { font-size: 16px; color: var(--ink-2); max-width: 760px; }
+.card { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 16px; min-width: 0; }
+.card .sub { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
+.grid { display: grid; gap: 16px; }
+.grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tiles { display: grid; gap: 12px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.tile { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 14px 16px; }
+.tile .label { color: var(--ink-2); font-size: 13px; }
+.tile .value { font-size: 30px; font-weight: 650; line-height: 1.15; margin: 4px 0; }
+.tile .note { color: var(--muted); font-size: 12.5px; }
+ul.findings { padding-left: 20px; max-width: 820px; }
+ul.findings li { margin-bottom: 8px; }
+.callout { background: var(--warn-bg); color: var(--warn-ink); border-radius: 8px; padding: 10px 14px; font-size: 14px; max-width: 820px; }
+.callout strong { color: inherit; }
+.filters { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: end; background: var(--surface); border: 1px solid var(--ring);
+  border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; }
+.filters label { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--ink-2); }
+select, input[type="range"] { font: inherit; font-size: 14px; color: var(--ink); background: var(--surface); }
+select { border: 1px solid var(--axis); border-radius: 6px; padding: 6px 8px; min-width: 220px; max-width: 100%; }
+input[type="range"] { width: 220px; accent-color: var(--accent); }
+.yearout { font-weight: 650; color: var(--ink); font-size: 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--ring); border-radius: 999px; padding: 3px 4px 3px 10px; font-size: 13px; background: var(--surface-2); }
+.chip i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.chip button { border: 0; background: none; color: var(--ink-2); cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 6px; border-radius: 50%; }
+.plot { width: 100%; height: 320px; }
+.plot.short { height: 220px; }
+.plot.tall { height: 380px; }
+details.table { margin-top: 6px; font-size: 13px; }
+details.table summary { color: var(--ink-2); cursor: pointer; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--ink-2); font-weight: 600; }
+.badge { display: inline-block; font-size: 11.5px; border-radius: 4px; padding: 1px 6px; margin-left: 4px; background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--ring); }
+.badge.warn { background: var(--warn-bg); color: var(--warn-ink); border-color: transparent; }
+.mapwrap { position: relative; }
+svg.map { width: 100%; height: auto; display: block; }
+svg.map path { stroke: var(--surface); stroke-width: .7; cursor: pointer; }
+svg.map path:hover { stroke: var(--ink); stroke-width: 1.4; }
+svg.map path.sel { stroke: var(--ink); stroke-width: 2.2; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12.5px; color: var(--ink-2); margin-top: 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { width: 14px; height: 10px; border-radius: 2px; display: inline-block; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--ring);
+  box-shadow: 0 4px 14px rgba(0,0,0,.12); border-radius: 8px; padding: 8px 10px; font-size: 13px; max-width: 260px; display: none; z-index: 5; }
+.tip b { display: block; margin-bottom: 2px; }
+.tip .m { color: var(--ink-2); }
+dl.defs { display: grid; grid-template-columns: 200px 1fr; gap: 6px 16px; max-width: 900px; }
+dl.defs dt { font-weight: 600; }
+dl.defs dd { margin: 0; color: var(--ink-2); }
+footer { border-top: 1px solid var(--ring); color: var(--ink-2); font-size: 13px; padding: 18px 0 30px; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 28px; }
+.hint { color: var(--muted); font-size: 12.5px; }
+@media (max-width: 900px) {
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid.two { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 520px) {
+  h1 { font-size: 22px; }
+  .tiles { grid-template-columns: minmax(0, 1fr); }
+  select, input[type="range"] { min-width: 0; width: 100%; }
+  .filters label { width: 100%; }
+  dl.defs { grid-template-columns: minmax(0, 1fr); }
+  dl.defs dd { margin-bottom: 8px; }
+}
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="wrap">
+    <p class="eyebrow">Allegheny County · Property sales</p>
+    <h1>Home Sale Prices by Municipality</h1>
+    <p class="meta" id="meta"></p>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="home">Home</button>
+      <button role="tab" data-tab="definitions">Data and Definitions</button>
+      <button role="tab" data-tab="summary">County Summary</button>
+      <button role="tab" data-tab="municipality">Municipality</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- Home -->
+<section class="tab" id="tab-home" role="tabpanel">
+  <h2>What is this dashboard?</h2>
+  <p class="lede">It shows the <strong>typical price paid for a property</strong> in each of Allegheny County's municipalities
+    (and each ward of Pittsburgh, McKeesport, Clairton and Duquesne), every year since 2012. It counts only sales the County
+    codes as valid, of a single parcel. "Typical" is the median: half the sales were for less, half for more.</p>
+  <div class="tiles" id="tiles"></div>
+
+  <h2>What the data shows</h2>
+  <ul class="findings" id="findings"></ul>
+  <p class="callout" id="home-caveat"></p>
+
+  <h2>How to use it</h2>
+  <ul class="findings">
+    <li><a href="#municipality">Municipality</a>: find your municipality or ward on the map, see its price every year, and compare it with up to five others.</li>
+    <li><a href="#summary">County Summary</a>: how prices moved across the County, and whether cheap and expensive places moved alike.</li>
+    <li><a href="#definitions">Data and Definitions</a>: what counts as a sale, what the numbers mean, and how far each year can be trusted.</li>
+  </ul>
+</section>
+
+<!-- Data and Definitions -->
+<section class="tab" id="tab-definitions" role="tabpanel" hidden>
+  <h2>What data is available?</h2>
+  <p class="lede" id="def-available"></p>
+
+  <h2>Definitions</h2>
+  <dl class="defs">
+    <dt>Typical price</dt><dd>The median price of a place's valid sales in a year: half sold for less, half for more.</dd>
+    <dt>Middle half</dt><dd>The range from the 25th to the 75th percentile price: the middle 50% of sales.</dd>
+    <dt>Valid sale</dt><dd>A sale the County codes as valid (codes 0, U, UR), with a price, whose deed covers one parcel on one sale date. Sales between relatives, sheriff sales and other non-market transfers are coded otherwise and not counted.</dd>
+    <dt>Municipality</dt><dd>The County's municipality code. It splits Pittsburgh, McKeesport, Clairton and Duquesne into wards, so a ward counts as one place.</dd>
+    <dt>Typical municipality</dt><dd>The median of the medians of all places with enough sales that year: a middle-of-the-road place, not a countywide average.</dd>
+    <dt>Typical yearly change</dt><dd>Measured inside each place (this year's median ÷ last year's) for places with enough sales in both years, then the median of those changes. A change in which places have enough sales can't create a change on its own.</dd>
+    <dt id="def-enough"></dt><dd id="def-enough-d"></dd>
+    <dt>Few sales</dt><dd>Fewer than 10 valid sales. No median is shown with fewer than 5.</dd>
+    <dt>Provisional</dt><dd>The current year: it isn't finished, and the County is still reviewing its sale codes. Its numbers will change.</dd>
+  </dl>
+
+  <h2>Limits</h2>
+  <ul class="findings" id="def-limits"></ul>
+
+  <h2>How much of each year the prices are based on</h2>
+  <div class="card">
+    <p class="sub">Share of each year's records coded valid, and how many places have enough sales to compare.</p>
+    <div class="scroll" id="coverage-table"></div>
+  </div>
+</section>
+
+<!-- County Summary -->
+<section class="tab" id="tab-summary" role="tabpanel" hidden>
+  <div class="grid two">
+    <div class="card">
+      <h3>Typical yearly change in a municipality's price</h3>
+      <p class="sub" id="sub-change"></p>
+      <div class="plot" id="p-change"></div>
+      <details class="table"><summary>Show as table</summary><div class="scroll" id="t-change"></div></details>
+    </div>
+    <div class="card">
+      <h3>Share of municipalities whose price went up</h3>
+      <p class="sub">Places with enough sales in both years. The line marks 50%.</p>
+      <div class="plot" id="p-up"></div>
+    </div>
+    <div class="card">
+      <h3>Typical municipality, and the spread between places</h3>
+      <p class="sub" id="sub-spread"></p>
+      <div class="plot" id="p-spread"></div>
+      <details class="table"><summary>Show as table</summary><div class="scroll" id="t-spread"></div></details>
+    </div>
+    <div class="card">
+      <h3>How many times the expensive end costs the cheap end</h3>
+      <p class="sub">90th-percentile municipality ÷ 10th-percentile municipality. Lower means places are closer together.</p>
+      <div class="plot" id="p-ratio"></div>
+    </div>
+    <div class="card">
+      <h3>Did cheap and expensive places rise alike?</h3>
+      <p class="sub" id="sub-quarters"></p>
+      <div class="plot" id="p-quarters"></div>
+      <details class="table"><summary>Show as table</summary><div class="scroll" id="t-quarters"></div></details>
+    </div>
+    <div class="card">
+      <h3 id="h-before-after">Before and after the jump</h3>
+      <p class="sub" id="sub-before-after"></p>
+      <div class="plot" id="p-before-after"></div>
+    </div>
+  </div>
+
+  <h2>Highest and lowest prices</h2>
+  <div class="filters">
+    <label>Year<select id="ends-year"></select></label>
+    <span class="hint" id="ends-hint"></span>
+  </div>
+  <div class="card">
+    <p class="sub">Dot = typical price, line = middle half of sales. Number of valid sales in brackets.</p>
+    <div class="plot tall" id="p-ends"></div>
+  </div>
+</section>
+
+<!-- Municipality -->
+<section class="tab" id="tab-municipality" role="tabpanel" hidden>
+  <div class="filters">
+    <label>Municipality or ward<select id="pick"></select></label>
+    <label>Compare with (up to 5)<select id="add"><option value="">Add a place…</option></select></label>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="grid two">
+    <div class="card" id="map-card">
+      <h3>Typical sale price by municipality, <span id="map-year-h"></span></h3>
+      <p class="sub">Click a place to see it below. Grey: too few valid sales to compare.</p>
+      <label class="hint" style="display:flex;align-items:center;gap:10px;margin-bottom:6px">Year
+        <input type="range" id="map-year"><span class="yearout" id="map-year-out"></span></label>
+      <div class="mapwrap"><svg class="map" id="map" role="img" aria-label="Map of typical sale price by municipality"></svg><div class="tip" id="tip"></div></div>
+      <div class="legend" id="map-legend"></div>
+    </div>
+    <div class="card">
+      <h3 id="profile-h"></h3>
+      <p class="sub">Typical price each year; the shaded band is the middle half of sales for the first place. Dashed grey: the typical municipality. Hollow points: too few sales to compare, or provisional.</p>
+      <div class="plot tall" id="p-profile"></div>
+      <h3 style="margin-top:8px">Valid sales behind each year</h3>
+      <div class="plot short" id="p-sales"></div>
+    </div>
+  </div>
+
+  <h2 id="table-h"></h2>
+  <div class="card"><div class="scroll" id="profile-table"></div></div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Source: <a href="https://data.wprdc.org/dataset/real-estate-sales">Allegheny County Property Sale Transactions</a>, Western Pennsylvania Regional Data Center.</span>
+    <span><a id="csv" download>Download the data (CSV)</a></span>
+    <span>Questions or feedback? See the <a href="https://github.com/hithaishree98/Alleghany_county_property_sales_transaction">project repository</a>.</span>
+  </div>
+</footer>
+
+<script>
+const D = /*__DATA__*/null;
+
+// ---------- helpers ----------
+const $ = (s) => document.querySelector(s);
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const money = (v) => v == null ? "—" : "$" + Math.round(v).toLocaleString("en-US");
+const moneyK = (v) => v == null ? "—" : "$" + Math.round(v / 1000).toLocaleString("en-US") + "k";
+const pct = (v, signed) => v == null ? "—" : (signed && v > 0 ? "+" : "") + Number(v).toFixed(1).replace(/\.0$/, "") + "%";
+const times = (v) => v == null ? "—" : Number(v).toFixed(2) + "×";
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const byYear = (arr) => Object.fromEntries((arr || []).map((r) => [r.sale_year, r]));
+
+const COV = byYear(D.coverage), CHG = byYear(D.change), SPR = byYear(D.spread);
+const L = D.latest, J = D.jump, SPLIT = J != null ? J - 1 : null;
+const PROV = new Set(D.coverage.filter((r) => r.provisional).map((r) => r.sale_year));
+const NAMES = D.names;
+const G = {};   // code -> [{y, med, p25, p75, n, low, prov}]
+for (const [y, code, med, p25, p75, n, low, prov] of D.gold) (G[code] ||= []).push({ y, med, p25, p75, n, low, prov });
+const at = (code, y) => (G[code] || []).find((r) => r.y === y);
+const comparable = (r) => r && r.n >= D.min_sales && r.med != null;
+const countyYears = D.years.filter((y) => SPR[y] && SPR[y].municipalities >= D.min_municipalities);
+const weakYears = D.coverage.filter((r) => !r.provisional).sort((a, b) => a.pct_valid - b.pct_valid).slice(0, 2).map((r) => r.sale_year).sort();
+
+function table(cols, rows) {
+  const head = "<tr>" + cols.map((c) => `<th>${esc(c[0])}</th>`).join("") + "</tr>";
+  const body = rows.map((r) => "<tr>" + cols.map((c) => `<td>${c[1](r)}</td>`).join("") + "</tr>").join("");
+  return `<table><thead>${head}</thead><tbody>${body}</tbody></table>`;
+}
+
+// ---------- Plotly theme ----------
+function base(extra = {}) {
+  const ink2 = css("--ink-2"), grid = css("--grid"), axis = css("--axis");
+  const ax = { gridcolor: grid, linecolor: axis, tickcolor: axis, zeroline: false, tickfont: { color: css("--muted"), size: 11 }, fixedrange: true };
+  return {
+    paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+    font: { family: "system-ui, -apple-system, Segoe UI, sans-serif", color: ink2, size: 12 },
+    margin: { l: 56, r: 12, t: 8, b: 36 }, showlegend: false, hovermode: "x unified",
+    hoverlabel: { bgcolor: css("--surface"), bordercolor: css("--axis"), font: { color: css("--ink"), size: 12 } },
+    legend: { orientation: "h", y: -0.18, x: 0, font: { size: 12 } },
+    bargap: 0.35,
+    ...extra,
+    xaxis: { ...ax, ...(extra.xaxis || {}) },
+    yaxis: { ...ax, ...(extra.yaxis || {}) },
+  };
+}
+const CONFIG = { displayModeBar: false, responsive: true };
+const yearAxis = (years) => ({ tickmode: "array", tickvals: years, ticktext: years.map((y) => (years.length > 10 && window.innerWidth < 700 ? "'" + String(y).slice(2) : y)) });
+const draw = (id, traces, layout) => Plotly.react(id, traces, layout, CONFIG);
+
+// ---------- header ----------
+$("#meta").innerHTML = [
+  D.data_through ? `<span>Data through ${esc(new Date(D.data_through + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }))}</span>` : "",
+  "<span>Updated daily</span>", `<span>Refreshed ${esc(D.built_at)}</span>`,
+].join("");
+$("#csv").href = D.csv;
+
+// ---------- Home ----------
+function renderHome() {
+  const tiles = [];
+  const c = CHG[L], s = SPR[L], ba = D.before_after;
+  const q = (D.quarters || []).find((r) => r.start_year === SPLIT);
+  if (c) tiles.push(["Typical sale price, " + L, money(c.typical_median), `the middle municipality of the ${c.municipalities} with ${D.min_sales}+ valid sales`]);
+  if (c && c.typical_change_pct != null) tiles.push([`Typical change, ${L - 1} to ${L}`, pct(c.typical_change_pct, true), `${Math.round(c.pct_municipalities_up)}% of ${c.municipalities_both_years} municipalities went up`]);
+  if (ba) tiles.push([`Growth since ${ba.split_year}`, times(ba.typical_growth_after), `${ba.split_year}–${ba.to_year}, the same ${ba.municipalities} municipalities (${times(ba.typical_growth_before)} in ${ba.from_year}–${ba.split_year})`]);
+  if (q) tiles.push([`Cheapest vs priciest places since ${SPLIT}`, `${times(q.Q1)} vs ${times(q.Q4)}`, `growth of the cheapest and most expensive quarter of municipalities, ${SPLIT}–${L}`]);
+  $("#tiles").innerHTML = tiles.map(([l, v, n]) => `<div class="tile"><div class="label">${esc(l)}</div><div class="value">${esc(v)}</div><div class="note">${esc(n)}</div></div>`).join("");
+
+  const f = [];
+  if (ba && CHG[J]) {
+    f.push(`<strong>Prices rose slowly until ${SPLIT}, then jumped.</strong> The typical municipality grew ${times(ba.typical_growth_before)} in total from ${ba.from_year} to ${SPLIT}. In ${J} prices rose ${pct(CHG[J].typical_change_pct, true)}, and ${Math.round(CHG[J].pct_municipalities_up)}% of municipalities went up.`);
+    const after = D.change.filter((r) => r.sale_year > J && r.sale_year <= L && r.typical_change_pct != null).map((r) => r.typical_change_pct);
+    if (after.length) f.push(`<strong>They kept rising after ${J}:</strong> between ${pct(Math.min(...after), true)} and ${pct(Math.max(...after), true)} a year through ${L}.`);
+    const who = ba.rose_after === ba.municipalities ? `All ${ba.municipalities} municipalities` : `${ba.rose_after} of ${ba.municipalities} municipalities`;
+    f.push(`<strong>${who} with enough sales to measure went up after ${SPLIT}.</strong> Following those same places, the typical one grew ${times(ba.typical_growth_after)} from ${SPLIT} to ${L}.`);
+  }
+  const q4 = (D.quarters || []).find((r) => r.start_year === SPLIT);
+  if (q4) f.push(`<strong>Cheaper places rose the most.</strong> Sorting municipalities by their ${SPLIT} price, the cheapest quarter grew ${times(q4.Q1)} by ${L} and the most expensive ${times(q4.Q4)}.`);
+  if (SPR[SPLIT] && SPR[L]) {
+    const narrowed = SPR[L].p90_to_p10 < SPR[SPLIT].p90_to_p10;
+    const corr = D.spread.filter((r) => r.rank_corr_with_previous_year != null && r.sale_year <= L).map((r) => r.rank_corr_with_previous_year);
+    f.push(`<strong>Expensive places stay expensive, but the gap ${narrowed ? "is shrinking" : "is growing"}.</strong> The 90th-percentile municipality cost ${times(SPR[SPLIT].p90_to_p10)} the 10th in ${SPLIT} and ${times(SPR[L].p90_to_p10)} in ${L}` +
+      (corr.length ? `, while each year's ranking matched the year before closely (rank correlation ${Math.min(...corr).toFixed(2)}–${Math.max(...corr).toFixed(2)}).` : "."));
+  }
+  const ends = D.ends && D.ends[L];
+  if (ends && ends.length) {
+    const hi = ends.filter((r) => r.end_ === "highest").slice(0, 3), lo = ends.filter((r) => r.end_ === "lowest").slice(0, 3);
+    const nm = (r) => `${esc(r.muni_desc.replace(/\s+/g, " ").trim())} ${money(r.median_price)}`;
+    f.push(`<strong>Highest and lowest in ${L}</strong> (${D.min_sales}+ sales): ${hi.map(nm).join(", ")} at the top; ${lo.map(nm).join(", ")} at the bottom.`);
+  }
+  $("#findings").innerHTML = f.map((x) => `<li>${x}</li>`).join("") || "<li>Not enough years of data yet to compare.</li>";
+
+  const prov = [...PROV];
+  $("#home-caveat").innerHTML = `<strong>Before comparing:</strong> ` +
+    (weakYears.length ? `${weakYears.join(" and ")} ${weakYears.length > 1 ? "are" : "is"} based on few coded sales, ` : "") +
+    (prov.length ? `${prov.join(", ")} is provisional, ` : "") +
+    `and the data has no property type. See <a href="#definitions">Data and Definitions</a>.`;
+}
+
+// ---------- Data and Definitions ----------
+function renderDefinitions() {
+  const o = D.overview;
+  $("#def-available").innerHTML = `${o.records.toLocaleString("en-US")} property sale records from ${o.first_year} to ${o.last_year}, for ${o.municipalities} municipalities and wards.
+    ${o.valid_coded.toLocaleString("en-US")} are coded valid; ${o.valid_sales_used.toLocaleString("en-US")} of those are single-parcel sales with a price and are used here
+    (${o.valid_excluded.toLocaleString("en-US")} are left out: deeds covering several parcels or dates, placeholder deeds, or the same parcel and date on two deeds).
+    The data is downloaded from WPRDC and this page is rebuilt every time it is refreshed.`;
+  $("#def-enough").textContent = `Enough sales to compare`;
+  $("#def-enough-d").textContent = `At least ${D.min_sales} valid sales in the year. A median of a handful of sales jumps around, so places below this are shown but not compared. The County level (the typical municipality) is read only for years with at least ${D.min_municipalities} such places.`;
+
+  const lim = [`<strong>Sale counts don't show market activity.</strong> How many records are coded valid depends on how the County coded each year (from ${Math.min(...D.coverage.map((r) => r.pct_valid))}% to ${Math.max(...D.coverage.map((r) => r.pct_valid))}% of records), so prices are compared inside each place, not as County totals.`];
+  for (const y of weakYears) {
+    const r = COV[y];
+    let t = `<strong>${y} is based on few sales:</strong> ${r.pct_valid}% of its records are coded valid${r.pct_undetermined ? ` and ${r.pct_undetermined}% hadn't been reviewed` : ""}; ${r.municipalities_comparable} places have enough sales.`;
+    if (r.municipalities_comparable < D.min_municipalities) t += ` Its County level isn't shown.`;
+    if (y === SPLIT) t += ` It is also the base year for the before/after and cheap-vs-expensive comparisons, so treat those as approximate.`;
+    lim.push(t);
+  }
+  for (const y of PROV) lim.push(`<strong>${y} isn't finished</strong> and its sale codes are still being reviewed, so comparisons stop at ${L}.`);
+  lim.push(`<strong>There's no property type in the data.</strong> If more condos or more large houses sold one year, the median could move without prices changing.`);
+  lim.push(`<strong>Price quarters are re-sorted for each start year,</strong> so different start years compare different groups of places.`);
+  $("#def-limits").innerHTML = lim.map((x) => `<li>${x}</li>`).join("");
+
+  $("#coverage-table").innerHTML = table([
+    ["Year", (r) => r.sale_year + (r.provisional ? ' <span class="badge warn">provisional</span>' : weakYears.includes(r.sale_year) ? ' <span class="badge warn">few coded sales</span>' : "")],
+    ["Records", (r) => r.records.toLocaleString("en-US")],
+    ["Coded valid", (r) => r.pct_valid.toFixed(1) + "%"],
+    ["Not yet reviewed", (r) => r.pct_undetermined.toFixed(1) + "%"],
+    ["Valid sales used", (r) => r.valid_sales_used.toLocaleString("en-US")],
+    [`Places with ${D.min_sales}+ sales`, (r) => r.municipalities_comparable],
+    ["Places with no median", (r) => r.rows_without_median],
+  ], D.coverage);
+}
+
+// ---------- County Summary ----------
+function renderSummary() {
+  const blue = css("--s1"), orange = css("--highlight"), muted = css("--muted");
+  const ch = D.change.filter((r) => r.typical_change_pct != null);
+  const yrs = ch.map((r) => r.sale_year);
+  $("#sub-change").textContent = `Median of each municipality's change from the year before. ${J ? J + " (orange) is the largest; " : ""}hatched: provisional.`;
+  draw("p-change", [{
+    type: "bar", x: yrs, y: ch.map((r) => r.typical_change_pct),
+    marker: { color: yrs.map((y) => (y === J ? orange : blue)), pattern: { shape: yrs.map((y) => (PROV.has(y) ? "/" : "")), fgcolor: css("--surface") } },
+    customdata: ch.map((r) => [r.municipalities_both_years, r.pct_municipalities_up]),
+    hovertemplate: "%{x}: %{y:+.1f}%<br>%{customdata[0]} municipalities, %{customdata[1]}% up<extra></extra>",
+  }], base({ hovermode: "closest", xaxis: yearAxis(yrs), yaxis: { ticksuffix: "%" } }));
+  $("#t-change").innerHTML = table([["Year", (r) => r.sale_year], ["Typical change", (r) => pct(r.typical_change_pct, true)], ["Municipalities", (r) => r.municipalities_both_years], ["% went up", (r) => r.pct_municipalities_up + "%"]], ch);
+
+  draw("p-up", [{
+    type: "scatter", mode: "lines+markers", x: yrs, y: ch.map((r) => r.pct_municipalities_up), line: { color: blue, width: 2 }, marker: { size: 7 },
+    hovertemplate: "%{x}: %{y}% went up<extra></extra>",
+  }], base({ xaxis: yearAxis(yrs), yaxis: { range: [0, 105], ticksuffix: "%" },
+    shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: 50, y1: 50, line: { color: muted, width: 1 } }] }));
+
+  const sp = D.spread, sy = sp.map((r) => r.sale_year);
+  const thin = sp.filter((r) => r.municipalities < D.min_municipalities);
+  $("#sub-spread").textContent = `The middle municipality's price (line) and the 10th–90th percentile municipalities (band), among places with ${D.min_sales}+ sales.` +
+    (thin.length ? ` Hollow: fewer than ${D.min_municipalities} places to compare (${thin.map((r) => r.sale_year).join(", ")}), so the level isn't comparable.` : "");
+  draw("p-spread", [
+    { type: "scatter", mode: "lines", x: sy, y: sp.map((r) => r.p90_median), line: { width: 0 }, hoverinfo: "skip" },
+    { type: "scatter", mode: "lines", x: sy, y: sp.map((r) => r.p10_median), fill: "tonexty", fillcolor: css("--band"), line: { width: 0 }, hoverinfo: "skip" },
+    { type: "scatter", mode: "lines+markers", x: sy, y: sp.map((r) => r.typical_median), line: { color: blue, width: 2 },
+      marker: { size: 8, color: sp.map((r) => (r.municipalities < D.min_municipalities ? css("--surface") : blue)), line: { color: sp.map((r) => (r.municipalities < D.min_municipalities ? orange : blue)), width: 2 } },
+      customdata: sp.map((r) => [r.p10_median, r.p90_median, r.municipalities]),
+      hovertemplate: "%{x}: typical %{y:$,.0f}<br>10th–90th: %{customdata[0]:$,.0f} – %{customdata[1]:$,.0f}<br>%{customdata[2]} municipalities<extra></extra>" },
+  ], base({ hovermode: "closest", xaxis: yearAxis(sy), yaxis: { tickprefix: "$", tickformat: "~s" } }));
+  $("#t-spread").innerHTML = table([["Year", (r) => r.sale_year], ["10th pct.", (r) => money(r.p10_median)], ["Typical", (r) => money(r.typical_median)], ["90th pct.", (r) => money(r.p90_median)], ["90th ÷ 10th", (r) => times(r.p90_to_p10)], ["Municipalities", (r) => r.municipalities], ["Rank corr. with year before", (r) => r.rank_corr_with_previous_year ?? "—"]], sp);
+
+  draw("p-ratio", [{
+    type: "scatter", mode: "lines+markers", x: sy, y: sp.map((r) => r.p90_to_p10), line: { color: blue, width: 2 }, marker: { size: 7 },
+    hovertemplate: "%{x}: %{y:.2f}×<extra></extra>",
+  }], base({ xaxis: yearAxis(sy), yaxis: { ticksuffix: "×" } }));
+
+  const qs = D.quarters || [];
+  $("#sub-quarters").textContent = qs.length ? `For each start year, municipalities are split into four groups by price, and each group's typical growth to ${L} is shown. Light = cheapest, dark = most expensive.` : "Not enough years yet.";
+  const qn = { Q1: "Cheapest quarter", Q2: "Second", Q3: "Third", Q4: "Most expensive quarter" };
+  draw("p-quarters", ["Q1", "Q2", "Q3", "Q4"].map((k, i) => ({
+    type: "scatter", mode: "lines+markers", name: qn[k], x: qs.map((r) => r.start_year), y: qs.map((r) => r[k]),
+    line: { color: css("--q" + (i + 1)), width: 2 }, marker: { size: 6 }, hovertemplate: `${qn[k]}: %{y:.2f}×<extra></extra>`,
+  })), base({ showlegend: true, margin: { l: 56, r: 12, t: 8, b: 70 }, xaxis: { ...yearAxis(qs.map((r) => r.start_year)), title: { text: "start year", font: { size: 11 } } }, yaxis: { ticksuffix: "×" },
+    shapes: SPLIT ? [{ type: "line", x0: SPLIT, x1: SPLIT, yref: "paper", y0: 0, y1: 1, line: { color: muted, width: 1 } }] : [] }));
+  $("#t-quarters").innerHTML = table([["Start year", (r) => r.start_year], ["Cheapest", (r) => times(r.Q1)], ["Q2", (r) => times(r.Q2)], ["Q3", (r) => times(r.Q3)], ["Most expensive", (r) => times(r.Q4)]], qs);
+
+  const ba = D.before_after;
+  if (ba) {
+    $("#h-before-after").textContent = `Before and after ${SPLIT}`;
+    $("#sub-before-after").textContent = `Typical growth of the same ${ba.municipalities} municipalities (those with ${D.min_sales}+ sales in ${ba.from_year}, ${ba.split_year} and ${ba.to_year}). ${ba.rose_after} of them were higher in ${ba.to_year} than in ${ba.split_year}.`;
+    const labels = [`${ba.from_year}–${ba.split_year}`, `${ba.split_year}–${ba.to_year}`], vals = [ba.typical_growth_before, ba.typical_growth_after];
+    draw("p-before-after", [{
+      type: "bar", x: labels, y: vals, marker: { color: [muted, blue] }, text: vals.map(times), textposition: "outside", cliponaxis: false,
+      textfont: { color: css("--ink"), size: 13 }, hovertemplate: "%{x}: %{y:.2f}×<extra></extra>", width: 0.45,
+    }], base({ hovermode: "closest", yaxis: { ticksuffix: "×", range: [0, Math.max(...vals) * 1.2] } }));
+  } else {
+    $("#sub-before-after").textContent = "Not enough years yet.";
+  }
+
+  const sel = $("#ends-year");
+  if (!sel.options.length) {
+    sel.innerHTML = D.years.slice().reverse().map((y) => `<option value="${y}">${y}${PROV.has(y) ? " (provisional)" : ""}</option>`).join("");
+    sel.value = L ?? D.years[D.years.length - 1];
+    sel.onchange = renderEnds;
+  }
+  renderEnds();
+}
+
+function renderEnds() {
+  const y = Number($("#ends-year").value), rows = ((D.ends || {})[y] || []).slice().reverse();
+  $("#ends-hint").textContent = `Places with ${D.min_sales}+ valid sales that year.` + (PROV.has(y) ? " Provisional year." : "");
+  const blue = css("--s1"), orange = css("--highlight");
+  const label = (r) => `${r.muni_desc.replace(/\s+/g, " ").trim()} (${r.valid_sales_used})`;
+  const colour = (r) => (r.end_ === "highest" ? blue : orange);
+  draw("p-ends", [
+    ...rows.map((r) => ({ type: "scatter", mode: "lines", x: [r.p25_price, r.p75_price], y: [label(r), label(r)], line: { color: colour(r), width: 3 }, opacity: 0.45, hoverinfo: "skip" })),
+    { type: "scatter", mode: "markers", x: rows.map((r) => r.median_price), y: rows.map(label), marker: { size: 11, color: rows.map(colour), line: { color: css("--surface"), width: 2 } },
+      customdata: rows.map((r) => [r.p25_price, r.p75_price]), hovertemplate: "%{y}<br>typical %{x:$,.0f}<br>middle half %{customdata[0]:$,.0f} – %{customdata[1]:$,.0f}<extra></extra>" },
+  ], base({ hovermode: "closest", margin: { l: 10, r: 16, t: 8, b: 36 }, xaxis: { tickprefix: "$", tickformat: "~s" }, yaxis: { automargin: true, gridcolor: "rgba(0,0,0,0)", tickfont: { color: css("--ink-2"), size: 12 } } }));
+}
+
+// ---------- Municipality ----------
+const MAX_PLACES = 6;
+const BINS = [100000, 150000, 200000, 275000, 400000];
+const BIN_LABELS = ["under $100k", "$100–150k", "$150–200k", "$200–275k", "$275–400k", "$400k+"];
+const codes = Object.keys(NAMES).sort((a, b) => NAMES[a].localeCompare(NAMES[b], "en", { numeric: true }));
+let places = [];
+let mapYear = L ?? D.years[D.years.length - 1];
+
+function readHash() {
+  const m = location.hash.match(/places=([\d,]+)/);
+  const fromHash = m ? m[1].split(",").filter((c) => NAMES[c]).slice(0, MAX_PLACES) : [];
+  places = fromHash.length ? fromHash : [D.default_muni];
+}
+
+function setPlaces(next) {
+  places = [...new Set(next)].filter((c) => NAMES[c]).slice(0, MAX_PLACES);
+  if (!places.length) places = [D.default_muni];
+  history.replaceState(null, "", "#municipality&places=" + places.join(","));
+  renderMunicipality();
+}
+
+function binColour(v) {
+  let i = BINS.findIndex((b) => v < b);
+  if (i === -1) i = BINS.length;
+  return css("--m" + i);
+}
+
+function renderMap() {
+  const card = $("#map-card");
+  if (!D.map) { card.hidden = true; return; }
+  const svg = $("#map");
+  if (!svg.childElementCount) {
+    svg.setAttribute("viewBox", `0 0 1000 ${D.map.height}`);
+    svg.innerHTML = Object.entries(D.map.paths).map(([c, d]) => `<path data-code="${c}" d="${d}"></path>`).join("");
+    const tip = $("#tip"), wrap = svg.parentElement;
+    svg.addEventListener("mousemove", (e) => {
+      const c = e.target.dataset && e.target.dataset.code;
+      if (!c) { tip.style.display = "none"; return; }
+      const r = at(c, mapYear);
+      tip.innerHTML = `<b>${esc(NAMES[c])}</b>` + (r && r.med != null
+        ? `${money(r.med)} typical<div class="m">middle half ${money(r.p25)} – ${money(r.p75)}<br>${r.n} valid sales${r.n < D.min_sales ? " · too few to compare" : ""}</div>`
+        : `<div class="m">${r ? r.n : 0} valid sales · no median</div>`) + `<div class="m">${mapYear}${PROV.has(mapYear) ? " (provisional)" : ""} · click to show below</div>`;
+      const box = wrap.getBoundingClientRect();
+      let x = e.clientX - box.left + 14, y = e.clientY - box.top + 14;
+      tip.style.display = "block";
+      if (x + tip.offsetWidth > box.width) x = e.clientX - box.left - tip.offsetWidth - 14;
+      tip.style.left = Math.max(0, x) + "px"; tip.style.top = y + "px";
+    });
+    svg.addEventListener("mouseleave", () => (tip.style.display = "none"));
+    svg.addEventListener("click", (e) => {
+      const c = e.target.dataset && e.target.dataset.code;
+      if (c) setPlaces([c, ...places.filter((p) => p !== c)]);
+    });
+    const slider = $("#map-year");
+    slider.min = D.years[0]; slider.max = D.years[D.years.length - 1]; slider.step = 1; slider.value = mapYear;
+    slider.oninput = () => { mapYear = Number(slider.value); renderMap(); };
+  }
+  $("#map-year-out").textContent = mapYear + (PROV.has(mapYear) ? " (provisional)" : "");
+  $("#map-year-h").textContent = mapYear;
+  for (const p of svg.children) {
+    const r = at(p.dataset.code, mapYear);
+    p.style.fill = comparable(r) ? binColour(r.med) : css("--none");
+    p.classList.toggle("sel", places.includes(p.dataset.code));
+  }
+  [...svg.querySelectorAll("path.sel")].forEach((p) => svg.appendChild(p));   // outlines on top
+  $("#map-legend").innerHTML = BIN_LABELS.map((l, i) => `<span><i style="background:${css("--m" + i)}"></i>${l}</span>`).join("") +
+    `<span><i style="background:${css("--none")}"></i>fewer than ${D.min_sales} sales</span>`;
+}
+
+function renderMunicipality() {
+  const pick = $("#pick"), add = $("#add");
+  if (!pick.options.length) {
+    pick.innerHTML = codes.map((c) => `<option value="${c}">${esc(NAMES[c])}</option>`).join("");
+    pick.onchange = () => setPlaces([pick.value, ...places.slice(1).filter((p) => p !== pick.value)]);
+    add.onchange = () => { if (add.value) setPlaces([...places, add.value]); add.value = ""; };
+  }
+  pick.value = places[0];
+  add.innerHTML = `<option value="">${places.length >= MAX_PLACES ? "Up to 5 places to compare" : "Add a place…"}</option>` +
+    codes.filter((c) => !places.includes(c)).map((c) => `<option value="${c}">${esc(NAMES[c])}</option>`).join("");
+  add.disabled = places.length >= MAX_PLACES;
+
+  const colours = places.map((_, i) => css("--s" + (i + 1)));
+  $("#chips").innerHTML = places.slice(1).map((c, i) => `<span class="chip"><i style="background:${colours[i + 1]}"></i>${esc(NAMES[c])}<button aria-label="Remove ${esc(NAMES[c])}" data-code="${c}">×</button></span>`).join("");
+  $("#chips").querySelectorAll("button").forEach((b) => (b.onclick = () => setPlaces(places.filter((p) => p !== b.dataset.code))));
+
+  renderMap();
+
+  const first = places[0];
+  $("#profile-h").textContent = places.length > 1 ? `${NAMES[first]} compared with ${places.length - 1} other place${places.length > 2 ? "s" : ""}` : `${NAMES[first]}: typical sale price`;
+  const traces = [];
+  const own = G[first] || [];
+  traces.push({ type: "scatter", mode: "lines", x: own.map((r) => r.y), y: own.map((r) => r.p75), line: { width: 0 }, hoverinfo: "skip", showlegend: false });
+  traces.push({ type: "scatter", mode: "lines", x: own.map((r) => r.y), y: own.map((r) => r.p25), fill: "tonexty", fillcolor: css("--band"), line: { width: 0 }, hoverinfo: "skip", showlegend: false });
+  traces.push({
+    type: "scatter", mode: "lines", name: "Typical municipality", x: countyYears, y: countyYears.map((y) => SPR[y].typical_median),
+    line: { color: css("--muted"), width: 1.5, dash: "dash" }, hovertemplate: "Typical municipality: %{y:$,.0f}<extra></extra>",
+  });
+  places.forEach((c, i) => {
+    const rs = (G[c] || []).filter((r) => r.med != null);
+    const solid = (r) => r.n >= D.min_sales && !r.prov;
+    traces.push({
+      type: "scatter", mode: "lines+markers", name: NAMES[c], x: rs.map((r) => r.y), y: rs.map((r) => r.med),
+      line: { color: colours[i], width: 2 },
+      marker: { size: 8, color: rs.map((r) => (solid(r) ? colours[i] : css("--surface"))), line: { color: colours[i], width: 2 } },
+      customdata: rs.map((r) => [r.n, r.n < D.min_sales ? " · too few to compare" : "", r.prov ? " · provisional" : ""]),
+      hovertemplate: `${esc(NAMES[c])}: %{y:$,.0f} (%{customdata[0]} sales%{customdata[1]}%{customdata[2]})<extra></extra>`,
+    });
+  });
+  draw("p-profile", traces, base({ showlegend: true, margin: { l: 56, r: 12, t: 8, b: 60 }, xaxis: yearAxis(D.years), yaxis: { tickprefix: "$", tickformat: "~s" } }));
+
+  draw("p-sales", places.map((c, i) => ({
+    type: "bar", name: NAMES[c], x: (G[c] || []).map((r) => r.y), y: (G[c] || []).map((r) => r.n), marker: { color: colours[i] },
+    hovertemplate: `${esc(NAMES[c])}: %{y} sales<extra></extra>`,
+  })), base({ barmode: "group", bargap: 0.25, bargroupgap: 0.08, xaxis: yearAxis(D.years),
+    shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: D.min_sales, y1: D.min_sales, line: { color: css("--muted"), width: 1 } }] }));
+
+  $("#table-h").textContent = `${NAMES[first]}, year by year`;
+  const badges = (r) => [
+    r.med == null ? '<span class="badge warn">no median (fewer than 5 sales)</span>' : r.low ? '<span class="badge warn">few sales</span>' : r.n < D.min_sales ? '<span class="badge">not compared</span>' : "",
+    r.prov ? '<span class="badge warn">provisional</span>' : "",
+  ].join("");
+  $("#profile-table").innerHTML = table([
+    ["Year", (r) => r.y + badges(r)], ["Typical price", (r) => money(r.med)], ["Middle half", (r) => (r.med == null ? "—" : `${money(r.p25)} – ${money(r.p75)}`)],
+    ["Valid sales", (r) => r.n], ["Typical municipality", (r) => (countyYears.includes(r.y) ? money(SPR[r.y].typical_median) : "—")],
+  ], own.slice().reverse());
+}
+
+// ---------- tabs ----------
+const renderers = { home: renderHome, definitions: renderDefinitions, summary: renderSummary, municipality: renderMunicipality };
+let current = null;
+function show(tab) {
+  if (!renderers[tab]) tab = "home";
+  current = tab;
+  document.querySelectorAll("nav.tabs button").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === tab));
+  document.querySelectorAll("section.tab").forEach((s) => (s.hidden = s.id !== "tab-" + tab));
+  renderers[tab]();
+}
+function route() {
+  const tab = location.hash.slice(1).split("&")[0];
+  if (tab === "municipality") readHash();
+  show(tab);
+}
+document.querySelectorAll("nav.tabs button").forEach((b) => (b.onclick = () => {
+  history.replaceState(null, "", b.dataset.tab === "municipality" && places.length ? "#municipality&places=" + places.join(",") : "#" + b.dataset.tab);
+  if (b.dataset.tab === "municipality" && !places.length) readHash();
+  show(b.dataset.tab);
+}));
+window.addEventListener("hashchange", route);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => current && renderers[current]());
+readHash();
+route();
+</script>
+</body>
+</html>

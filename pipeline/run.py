@@ -3,6 +3,8 @@
     1. ingest   download every year from WPRDC into landing and bronze (pipeline/ingest.py)
     2. silver   rebuild the cleaned table from the active bronze versions (pipeline/silver.py)
     3. gold     rebuild the output table from silver (pipeline/gold.py)
+    4. dashboard  rebuild dashboard/home_sale_prices.html from gold (pipeline/dashboard.py),
+                  so the page refreshes whenever the data does
 
 Scheduling, task retries, run history and alerting are an orchestrator's job (see README,
 "Daily refreshes and 100x scale"); this runner only sequences the steps for a local run. A
@@ -23,6 +25,7 @@ import uuid
 from pipeline import DB_PATH
 from pipeline.checks import CheckFailed
 from pipeline.ckan import DATASET_ID, extract_year_sources, fetch_resources
+from pipeline.dashboard import build_dashboard
 from pipeline.gold import build_gold
 from pipeline.ingest import WarehouseLocked, cleanup_crashed_run, connect, ingest_year
 from pipeline.silver import PREVIOUS, build_silver, drop_stage, restore_previous
@@ -38,6 +41,15 @@ def build_silver_and_gold(con, run_id):
         restore_previous(con, run_id)
         raise
     drop_stage(con, PREVIOUS)
+
+
+def refresh_dashboard(con):
+    """Rebuild the dashboard from the new gold table. Gold is the product and the dashboard a
+    view of it, so a failure here is reported but doesn't fail the run; the old page stays."""
+    try:
+        build_dashboard(con)
+    except Exception as exc:
+        print(f"  dashboard: NOT refreshed ({exc.__class__.__name__}: {str(exc)[:300]}); the previous page stays")
 
 
 def ingest(con, args, run_id):
@@ -94,6 +106,8 @@ def main(argv=None):
         except CheckFailed as exc:
             problems += 1
             print(f"  STOPPED: {exc}. The live silver and gold tables were not replaced.")
+        else:
+            refresh_dashboard(con)
     finally:
         con.close()
     return 1 if problems else 0

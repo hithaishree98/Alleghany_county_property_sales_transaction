@@ -3,6 +3,9 @@
     from helpers import connect, show, profile, by_year, DATA_DIR
     con, years = connect()
 
+show() prints a query's result as a table; df() returns it as a DataFrame for a chart, styled
+by plot_style().
+
 connect() gives a read-only connection to data/warehouse.duckdb with a temp view `s`: every
 year's active bronze table stacked, with a `file_year` column saying which file each row came
 from.
@@ -76,9 +79,43 @@ def connect():
     return _Connection(), years
 
 
-def show(sql, rows=40, width=220):
-    """Run SQL and print the result as a table."""
+def show(sql, rows=40, width=220, echo=False):
+    """Run SQL and print the result as a table; echo=True prints the SQL above it."""
+    if echo:
+        print(sql.strip(), end="\n\n")
     _open().sql(sql).show(max_rows=rows, max_width=width)
+
+
+def df(sql):
+    """Run SQL and return the result as a pandas DataFrame, for charts."""
+    return _open().execute(sql).df()
+
+
+# Chart colours (the dataviz reference palette): one accent, one highlight, greys for context,
+# and a light-to-dark blue ramp for ordered groups such as price quarters
+BLUE, ORANGE = "#2a78d6", "#eb6834"
+INK, MUTED, GRID = "#52514e", "#898781", "#e1e0d9"
+RAMP = ["#86b6ef", "#3987e5", "#256abf", "#104281"]
+
+
+def plot_style():
+    """Thin marks, hairline grid, no top/right spines, money and year axes that read plainly."""
+    import matplotlib as mpl
+    mpl.rcParams.update({
+        "figure.dpi": 110, "figure.facecolor": "white", "axes.facecolor": "white",
+        "axes.edgecolor": "#c3c2b7", "axes.labelcolor": INK, "axes.titlesize": 11,
+        "axes.titleweight": "bold", "axes.titlelocation": "left", "axes.spines.top": False,
+        "axes.spines.right": False, "axes.grid": True, "axes.grid.axis": "y", "axes.axisbelow": True, "grid.color": GRID,
+        "grid.linewidth": 0.6, "xtick.color": MUTED, "ytick.color": MUTED, "text.color": INK,
+        "legend.frameon": False, "lines.linewidth": 2, "font.size": 9,
+    })
+
+
+def dollars(ax, axis="y"):
+    """Format an axis as $k."""
+    from matplotlib.ticker import FuncFormatter
+    fmt = FuncFormatter(lambda v, _: f"${v / 1000:,.0f}k")
+    (ax.yaxis if axis == "y" else ax.xaxis).set_major_formatter(fmt)
 
 
 def source_columns():
