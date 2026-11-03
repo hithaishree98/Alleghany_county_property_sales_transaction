@@ -241,31 +241,31 @@ The design stays the same only the infrastructure changes:
 
 The pipeline logic stays the same. The infrastructure changes, plus a few safety fixes found while designing it.
 
-- Raw files go to Data Lake, named by their SHA-256, with versioning and immutability policy, so nothing can be overwritten or deleted.
+- **Raw files go to Data Lake**, named by their SHA-256, with versioning and immutability policy, so nothing can be overwritten or deleted.
   Why: raw files are the only proof of what the County published, and every later layer can be rebuilt from them.
-- Each bronze version is a write-once Parquet folder per year and version, with an active-version pointer.
+- **Each bronze version is a write-once Parquet** folder per year and version, with an active-version pointer.
   Why: Parquet is compressed and fast to query, and write-once keeps every version exactly as it was loaded.
-- Row fingerprints use SHA-256 per row instead of DuckDB's hash(), and a version that breaks the 26-column contract is quarantined.
+- **Row fingerprints use SHA-256 per row** instead of DuckDB's hash(), and a version that breaks the 26-column contract is quarantined.
   Why: DuckDB library upgrade can't invalidate every fingerprint and schema change doesn't stop the build. It leaves the year on its last good version.
-- Silver and gold are Delta tables built together. One current_build pointer switch makes both live at once. The last few builds are kept (the number of builds to be kept need to be decided).
+- **Silver and gold are Delta tables** built together. One current_build pointer switch makes both live at once. The last few builds are kept (the number of builds to be kept need to be decided).
   Why: Delta commits cover one table only, so through pointer we can close the crash gap between silver and gold. Rollback means setting the pointer back.
-- Airflow on AKS runs one DAG daily at 9:00 ET, after the source's 07:00–08:30 rebuild.
+- **Airflow on AKS** runs one DAG daily at 9:00 ET, after the source's 07:00–08:30 rebuild.
   Why: running earlier risks catching a half-written file, which I saw happen twice.
-- DAG shape: cleanup, discover years, one mapped ingest task per year, build candidate, publish, dashboard, run report. Builds from a code change wait for human approval before publishing.
+- **DAG shape: cleanup, discover years, one mapped ingest task per year, build candidate, publish, dashboard, run report**. Builds from a code change wait for human approval before publishing.
   Why: new years are picked up with no code change, one bad file never blocks the others, and new code can't change published numbers without review.
-- One Docker image, tested in CI, run per task with PodOperator. Secrets come from Key Vault.
+- **One Docker image, tested in CI**, run per task with PodOperator. Secrets come from Key Vault.
   Why: every step runs the exact tested code, with no credentials in code or config.
-- One writer at a time: max_active_runs=1, plus a lock around manifest and pointer writes.
+- **One writer at a time**: max_active_runs=1, plus a lock around manifest and pointer writes.
   Why: a manual rerun can't collide with the scheduled run.
-- Hard failures page on-call, warnings go to Teams with a ticket, and info checks are trended in Grafana. A freshness alert in Azure Monitor fires if no build is published within 24 hours.
+- **Alerts and Monitoring**: Hard failures page on-call, warnings go to Teams with a ticket, and info checks are trended in Grafana. A freshness alert in Azure Monitor fires if no build is published within 24 hours.
   Why: the alert matches the urgency, and the freshness check runs outside Airflow because a monitor inside Airflow can't report that Airflow itself is down.
-- 100x is about 50 million rows, which DuckDB still handles on one machine, so no Spark.
-  Why: a cluster adds cost and complexity this data size doesn't need.
-- 100x rebuilds: rebuild only the years whose bronze changed (the change log says which), plus every deed those years touch.
-  Why: deeds span year files, and gold's single-parcel rule counts parcels across all years, so rebuilding only the changed sale years would miss affected rows.
-- Switch the CSV parser to streaming batches, since today it holds a whole file in memory.
+- **100x is about 50 million rows**, which DuckDB still handles on one machine, so **no Spark**.
+  Why: a cluster adds cost and complexity this data size doesn't need. This is with 50M rows assumption, if the data size varies hugely, it would need cluster.
+- 100x rebuilds: **rebuild only the years whose bronze changed, plus every row in any year that shares a deed with those changes**.
+  Why: a sale counts in gold only if its deed covers a single parcel across all years, so a new row in one year file can invalidate a sale in another.
+- **Switch the CSV parser to streaming batches**, since today it holds a whole file in memory.
   Why: memory is the first thing to break at 100x, and streaming keeps it flat without giving up strict parsing.
-- Landing files move to the Cold tier after 90 days. The immutability period follows the County's records schedule (to be confirmed).
+- **Landing files move to the Cold tier** after 90 days. The immutability period follows the County's records schedule (to be confirmed).
   Why: old raw files are rarely read but must never be lost, and the Cold tier keeps them cheaply.
 
 ## AI disclosure
