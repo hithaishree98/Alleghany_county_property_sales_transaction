@@ -264,7 +264,6 @@ The design stays the same only the infrastructure changes:
 
 I used **Claude Code** as a collaborative partner:
 
-- **Understanding the data:** to understand the dataset and cross-check my own understanding of it.
 - **Profiling plan:** I built the profiling steps and the plan together with Claude. I went through the plan it suggested, questioned the parts I wasn't convinced about or had doubts on, and changed them. Then I asked it to implement the plan with a few rules: follow the project's folder structure, reuse common code, and change an existing function instead of writing a new one when one already exists.
 - **Checking my analysis:** to check my analysis and explanations against what each query actually returned. In some places it added analysis I hadn't thought of at first.
 - **Open questions:** to check whether the official website or documentation had any information on my open questions, and to reason through them. Anything the source doesn't confirm, I left as an open question, since as a data engineer it needs to be confirmed, not assumed.
